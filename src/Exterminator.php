@@ -69,6 +69,9 @@ class Exterminator
             static::varDumper(
                 $dumperOptions['root'],
                 $dumperOptions['theme'] ?? 'dark',
+                $dumperOptions['max_items'] ?? -1,
+                $dumperOptions['max_string'] ?? -1,
+                $dumperOptions['min_depth'] ?? 1,
                 $dumperOptions['server_host'] ?? null
             );
         }
@@ -189,8 +192,14 @@ class Exterminator
      * @link https://symfony.com/doc/current/components/var_dumper
      * @link https://symfony.com/doc/current/components/var_dumper/advanced
      */
-    public static function varDumper(string $root, string $theme = 'dark', ?string $serverHost = null)
-    {
+    public static function varDumper(
+        string $root,
+        string $theme = 'dark',
+        int $maxItems = -1,
+        int $maxString = -1,
+        int $minDepth = 1,
+        ?string $serverHost = null
+    ) {
         $serverHost = $serverHost ?? 'tcp://127.0.0.1:9912';
 
         $htmlDumper = new HtmlDumper();
@@ -215,6 +224,9 @@ class Exterminator
         $dumper = new ServerDumper($serverHost, $fallbackDumper, $contextProviders);
 
         $cloner->addCasters(ReflectionCaster::UNSET_CLOSURE_FILE_INFO);
+        $cloner->setMaxItems($maxItems);
+        $cloner->setMinDepth($minDepth);
+        $cloner->setMaxString($maxString);
 
         VarDumper::setHandler(function ($var) use ($dumper, $cloner) {
             $dumper->dump($cloner->cloneVar($var));
