@@ -32,11 +32,37 @@ use Whoops\Util\Misc;
 
 class Exterminator
 {
-    /**
-     *
-     */
+    public const DEFAULT_EDITOR = 'phpstorm';
+
+    public const EDITOR_FORMATS = [
+        'atom' => 'atom://core/open/file?filename=%f&line=%l',
+        'emacs' => 'emacs://open?url=file://%f&line=%l',
+        'macvim' => 'mvim://open?url=file://%f&line=%l',
+        'phpstorm' => 'phpstorm://open?file=%f&line=%l',
+        'sublime' => 'subl://open?url=file://%f&line=%l',
+        'textmate' => 'txmt://open?url=file://%f&line=%l',
+        'vscode' => 'vscode://file/%f:%l',
+    ];
+
+    public static function resolveFormat(?string $editor = null, ?string $format = null)
+    {
+        $default = ini_get('xdebug.file_link_format')
+            ?: get_cfg_var('xdebug.file_link_format');
+
+        return $format ?? ($editor ? static::EDITOR_FORMATS[$editor] : $default);
+    }
+
     public static function init(array $options)
     {
+        $enable = $options['enable'] ?? true;
+        $editor = $options['editor'] ?? static::DEFAULT_EDITOR;
+        $format = $options['format'] ?? null;
+        $logFile = $options['log'] ?? null;
+
+        $format = static::resolveFormat($editor, $format);
+
+        static::basic($enable, $logFile, $format);
+
         $loggerOptions = $options['error_logger'] ?? [];
         $errorOptions = $options['error_handler'] ?? [];
         $dumperOptions = $options['var_dumper'] ?? [];
@@ -57,11 +83,12 @@ class Exterminator
 
         if ($errorOptions) {
             static::errorHandler(
-                $logger ?? $errorOptions['logger'],
-                $errorOptions['link_format'] ?? null,
+                $logger ?? $errorOptions['logger'] ?? null,
+                $format ?? $errorOptions['link_format'] ?? null,
                 $errorOptions['host_os'] ?? null,
                 $errorOptions['host_path'] ?? null,
                 $errorOptions['guest_path'] ?? null,
+                $enable
             );
         }
 
@@ -75,6 +102,21 @@ class Exterminator
                 $dumperOptions['server_host'] ?? null
             );
         }
+    }
+
+    public static function basic(bool $enable, ?string $logFile = null, ?string $linkFormat = null): void
+    {
+        if (!empty($logFile) && !file_exists($logPath = dirname($logFile))) {
+            mkdir($logPath, 0777, true);
+        }
+
+        ini_set('error_reporting', E_ALL);
+        ini_set('display_errors', $enable);
+
+        ini_set('log_errors', true);
+        ini_set('error_log', $logFile);
+
+        ini_set('xdebug.file_link_format', $linkFormat);
     }
 
     /**
@@ -136,11 +178,12 @@ class Exterminator
      * @link https://github.com/nunomaduro/collision
      */
     public static function errorHandler(
-        LoggerInterface $logger,
+        ?LoggerInterface $logger = null,
         ?string $linkFormat = null,
         ?string $hostOs = null,
         ?string $hostPath = null,
-        ?string $guestPath = null
+        ?string $guestPath = null,
+        bool $display = true
     ): Run {
         if (Misc::isCommandLine()) {
             $outputHandler = new Handler();
@@ -175,6 +218,7 @@ class Exterminator
             ->addPreviousToOutput(true);
 
         $run = new Run();
+        $run->writeToOutput($display);
         $run->pushHandler($outputHandler)
             ->pushHandler($logHandler)
             ->register();
