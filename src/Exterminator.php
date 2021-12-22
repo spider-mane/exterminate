@@ -2,6 +2,8 @@
 
 namespace WebTheory\Exterminate;
 
+use ErrorException;
+use InvalidArgumentException;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\ErrorLogHandler;
 use Monolog\Logger;
@@ -32,8 +34,6 @@ use Whoops\Util\Misc;
 
 class Exterminator
 {
-    public const DEFAULT_EDITOR = 'phpstorm';
-
     public const EDITOR_FORMATS = [
         'atom' => 'atom://core/open/file?filename=%f&line=%l',
         'emacs' => 'emacs://open?url=file://%f&line=%l',
@@ -44,77 +44,101 @@ class Exterminator
         'vscode' => 'vscode://file/%f:%l',
     ];
 
+    public const DEFAULT_EDITOR = 'phpstorm';
+
     public static function resolveFormat(?string $editor = null, ?string $format = null)
     {
         $default = ini_get('xdebug.file_link_format')
             ?: get_cfg_var('xdebug.file_link_format');
 
-        return $format ?? ($editor ? static::EDITOR_FORMATS[$editor] : $default);
+        if (!$resolved = static::EDITOR_FORMATS[$editor] ?? null) {
+            $supported = implode(', ', array_keys(static::EDITOR_FORMATS));
+            $message = "Provided editor \"$editor\" is not supported.";
+            $message .= " Use one of: [$supported] or specify a format instead.";
+
+            throw new InvalidArgumentException($message);
+        }
+
+        return $format ?? ($editor ? $resolved : $default);
     }
 
-    public static function init(array $options)
+    public static function isCli(): bool
+    {
+        return in_array(PHP_SAPI, ['cli', 'phpdbg']);
+    }
+
+    protected static function catchBootErrors(): void
+    {
+        set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+            throw new ErrorException($errstr, $errno, 0, $errfile, $errline);
+        });
+    }
+
+    public static function debug(array $options)
     {
         $enable = $options['enable'] ?? true;
+        $display = $options['display'] ?? $enable;
         $editor = $options['editor'] ?? static::DEFAULT_EDITOR;
         $format = $options['format'] ?? null;
         $logFile = $options['log'] ?? null;
+        $system = $options['system'] ?? [];
 
         $format = static::resolveFormat($editor, $format);
 
-        static::basic($enable, $logFile, $format);
+        static::basic($display, $logFile, $format);
 
-        $loggerOptions = $options['error_logger'] ?? [];
-        $errorOptions = $options['error_handler'] ?? [];
-        $dumperOptions = $options['var_dumper'] ?? [];
-        $iniOptions = $options['ini'] ?? [];
-        $xdebugOptions = $options['xdebug'] ?? [];
+        $loggerArgs = $options['error_logger'] ?? false;
+        $errorArgs = $options['error_handler'] ?? false;
+        $dumperArgs = $options['var_dumper'] ?? false;
+        $iniArgs = $options['ini'] ?? false;
+        $xdebugArgs = $options['xdebug'] ?? false;
 
-        if ($iniOptions) {
-            static::ini($iniOptions);
+        if (is_array($iniArgs)) {
+            static::ini($iniArgs);
         }
 
-        if ($xdebugOptions) {
-            static::xdebug($xdebugOptions);
+        if (is_array($xdebugArgs)) {
+            static::xdebug($xdebugArgs);
         }
 
-        if ($loggerOptions) {
-            $logger = static::errorLogger($loggerOptions['channel'] ?? 'errorlog');
+        if (true === $loggerArgs || is_array($loggerArgs)) {
+            $logger = static::errorLogger($loggerArgs['channel'] ?? 'errorlog');
         }
 
-        if ($errorOptions) {
+        if (true === $errorArgs || is_array($errorArgs)) {
             static::errorHandler(
-                $logger ?? $errorOptions['logger'] ?? null,
-                $format ?? $errorOptions['link_format'] ?? null,
-                $errorOptions['host_os'] ?? null,
-                $errorOptions['host_path'] ?? null,
-                $errorOptions['guest_path'] ?? null,
-                $enable
+                $logger ?? $errorArgs['logger'] ?? null,
+                $format ?? $errorArgs['link_format'] ?? null,
+                $system['host_os'] ?? $errorArgs['host_os'] ?? null,
+                $system['host_path'] ?? $errorArgs['host_path'] ?? null,
+                $system['guest_path'] ?? $errorArgs['guest_path'] ?? null,
+                $display
             );
         }
 
-        if ($dumperOptions) {
+        if (is_array($dumperArgs)) {
             static::varDumper(
-                $dumperOptions['root'],
-                $dumperOptions['theme'] ?? 'dark',
-                $dumperOptions['max_items'] ?? -1,
-                $dumperOptions['max_string'] ?? -1,
-                $dumperOptions['min_depth'] ?? 1,
-                $dumperOptions['server_host'] ?? null
+                $dumperArgs['root'],
+                $dumperArgs['theme'] ?? 'dark',
+                $dumperArgs['max_items'] ?? -1,
+                $dumperArgs['max_string'] ?? -1,
+                $dumperArgs['min_depth'] ?? 1,
+                $dumperArgs['server_host'] ?? null
             );
         }
     }
 
-    public static function basic(bool $enable, ?string $logFile = null, ?string $linkFormat = null): void
+    public static function basic(bool $displayErrors = true, ?string $errorLog = null, ?string $linkFormat = null): void
     {
-        if (!empty($logFile) && !file_exists($logPath = dirname($logFile))) {
+        if (!empty($errorLog) && !file_exists($logPath = dirname($errorLog))) {
             mkdir($logPath, 0777, true);
         }
 
         ini_set('error_reporting', E_ALL);
-        ini_set('display_errors', $enable);
+        ini_set('display_errors', $displayErrors);
 
         ini_set('log_errors', true);
-        ini_set('error_log', $logFile);
+        ini_set('error_log', $errorLog);
 
         ini_set('xdebug.file_link_format', $linkFormat);
     }
@@ -261,9 +285,9 @@ class Exterminator
             'request' => new RequestContextProvider($requestStack)
         ];
 
-        $fallbackDumper = in_array(PHP_SAPI, ['cli', 'phpdbg']) ? $cliDumper : $htmlDumper;
-        $fallbackDumper = new DumpDataCollector(null, $linkFormatter, null, $requestStack, $fallbackDumper); // displays file and line in output
-        $fallbackDumper = new ContextualizedDumper($fallbackDumper, $contextProviders); // adds context caret to output
+        $fallbackDumper = static::isCli() ? $cliDumper : $htmlDumper;
+        $fallbackDumper = new DumpDataCollector(null, $linkFormatter, null, $requestStack, $fallbackDumper);
+        $fallbackDumper = new ContextualizedDumper($fallbackDumper, $contextProviders);
 
         $dumper = new ServerDumper($serverHost, $fallbackDumper, $contextProviders);
 

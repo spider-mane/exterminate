@@ -1,6 +1,7 @@
 <?php
 
 use Dotenv\Dotenv;
+use Symfony\Component\VarDumper\Cloner\Data;
 use WebTheory\Exterminate\Exterminator;
 
 use function Env\env;
@@ -13,11 +14,19 @@ $env = Dotenv::createUnsafeImmutable($root);
 $env->load();
 $env->required(['HOST_OS', 'HOST_PATH', 'GUEST_PATH']);
 
-Exterminator::init([
+Exterminator::debug([
 
     'enable' => true,
+    'display' => true,
     'editor' => 'vscode',
     'log' => $root . '/logs/basic.log',
+    'root' => $root,
+
+    'system' => [
+        'host_os' => env('HOST_OS'),
+        'host_path' => env('HOST_PATH'),
+        'guest_path' => env('GUEST_PATH'),
+    ],
 
     'ini' => [
         // 'error_reporting' => E_ERROR,
@@ -25,20 +34,27 @@ Exterminator::init([
         // 'log_errors' => false,
         // 'error_log' => $root . '/logs/ini.log'
     ],
+
     'xdebug' => [
         'cli_color' => 1,
         'var_display_max_children' => 256,
         'var_display_max_data' => 1024,
         'var_display_max_depth' => 10,
+        // 'file_link_format' => '',
     ],
+
     'error_logger' => [
         'channel' => 'errors'
     ],
+
     'error_handler' => [
-        'host_os' => env('HOST_OS'),
-        'host_path' => env('HOST_PATH'),
-        'guest_path' => env('GUEST_PATH'),
+        // 'host_os' => env('HOST_OS'),
+        // 'host_path' => env('HOST_PATH'),
+        // 'guest_path' => env('GUEST_PATH'),
     ],
+    // 'error_handler' => true,
+
+
     'var_dumper' => [
         'root' => $root,
         'theme' => 'dark',
@@ -46,5 +62,6 @@ Exterminator::init([
     ],
 ]);
 
+// dd(new DateTime());
 // undefined_function();
 $var = $undefinedVariable;
