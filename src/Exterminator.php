@@ -2,6 +2,7 @@
 
 namespace WebTheory\Exterminate;
 
+use Closure;
 use ErrorException;
 use InvalidArgumentException;
 use Monolog\Formatter\LineFormatter;
@@ -252,7 +253,9 @@ class Exterminator
             ->register();
 
         if ($logger instanceof Logger) {
-            $logger->setExceptionHandler([$run, RunInterface::EXCEPTION_HANDLER]);
+            $logger->setExceptionHandler(
+                Closure::fromCallable([$run, RunInterface::EXCEPTION_HANDLER])
+            );
         }
 
         return $run;
