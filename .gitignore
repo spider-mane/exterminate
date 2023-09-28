@@ -9,6 +9,7 @@ docker-compose.override.yml
 # Composer
 /vendor/
 composer.lock
+pathagist.json
 
 # Env
 *.env

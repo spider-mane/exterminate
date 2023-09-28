@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+readonly user="exterminate"
+
+docker compose exec -u "$user" app "$@"

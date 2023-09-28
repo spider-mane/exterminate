@@ -1,0 +1,12 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+  "name": "exterminate",
+  "dockerComposeFile": [
+    "../docker-compose.yml",
+    "../docker-compose.override.yml"
+  ],
+  "service": "app",
+  "remoteUser": "exterminate",
+  "workspaceFolder": "/app",
+  "shutdownAction": "none"
+}
