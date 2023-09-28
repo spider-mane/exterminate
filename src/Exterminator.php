@@ -134,13 +134,13 @@ class Exterminator
             mkdir($logPath, 0777, true);
         }
 
-        ini_set('error_reporting', E_ALL);
-        ini_set('display_errors', $displayErrors);
+        ini_set('error_reporting', (string) E_ALL);
+        ini_set('display_errors', (string) $displayErrors);
 
-        ini_set('log_errors', true);
-        ini_set('error_log', $errorLog);
+        ini_set('log_errors', (string) true);
+        ini_set('error_log', (string) $errorLog);
 
-        ini_set('xdebug.file_link_format', $linkFormat);
+        ini_set('xdebug.file_link_format', (string) $linkFormat);
     }
 
     /**

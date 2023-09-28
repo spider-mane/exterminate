@@ -62,4 +62,4 @@ Exterminator::debug([
 
 // dd(new DateTime());
 // undefined_function();
-$var = $undefinedVariable;
+$var = $undefinedVariable; //@phpstan-ignore-line
