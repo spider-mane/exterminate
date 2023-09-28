@@ -182,8 +182,9 @@ class Exterminator
         $handler = new ErrorLogHandler();
         $formatter = new LineFormatter();
 
-        $formatter->allowInlineLineBreaks(true);
-        $formatter->ignoreEmptyContextAndExtra(true);
+        $formatter
+            ->allowInlineLineBreaks(true)
+            ->ignoreEmptyContextAndExtra(true);
 
         $handler->setFormatter($formatter);
 
@@ -217,7 +218,10 @@ class Exterminator
         } else {
             $outputHandler = new PrettyPageHandler();
             if ($hostOs) {
-                $outputHandler->setEditor(function ($file, $line) use (
+                $outputHandler->setEditor(function (
+                    $file,
+                    $line
+                ) use (
                     $linkFormat,
                     $hostOs,
                     $hostPath,
@@ -282,7 +286,7 @@ class Exterminator
         $contextProviders = [
             'cli' => new CliContextProvider(),
             'source' => new SourceContextProvider('UTF-8', $root, $linkFormatter),
-            'request' => new RequestContextProvider($requestStack)
+            'request' => new RequestContextProvider($requestStack),
         ];
 
         $fallbackDumper = static::isCli() ? $cliDumper : $htmlDumper;

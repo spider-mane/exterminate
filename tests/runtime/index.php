@@ -1,7 +1,6 @@
 <?php
 
 use Dotenv\Dotenv;
-use Symfony\Component\VarDumper\Cloner\Data;
 use WebTheory\Exterminate\Exterminator;
 
 use function Env\env;
@@ -44,7 +43,7 @@ Exterminator::debug([
     ],
 
     'error_logger' => [
-        'channel' => 'errors'
+        'channel' => 'errors',
     ],
 
     'error_handler' => [
@@ -53,7 +52,6 @@ Exterminator::debug([
         // 'guest_path' => env('GUEST_PATH'),
     ],
     // 'error_handler' => true,
-
 
     'var_dumper' => [
         'root' => $root,
