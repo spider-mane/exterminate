@@ -15,15 +15,18 @@ build:
       tests:
         override:
           - vendor/bin/phpcs
-    php-7.3:
+    php-8.1:
       environment:
-        php: 7.3
-    php-7.4:
+        php: 8.1
+    php-8.2:
       environment:
-        php: 7.4
-    php-8.0:
+        php: 8.2
+    php-8.3:
       environment:
-        php: 8.0
+        php: 8.3
+    php-8.4:
+      environment:
+        php: 8.4
 
 filter:
   excluded_paths:

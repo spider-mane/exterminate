@@ -5,7 +5,6 @@ COPY --from=spidermane/trunk * /trunk
 ENV DEBIAN_FRONTEND=noninteractive
 
 ENV APP=/app
-VOLUME [ "$APP" ]
 WORKDIR "$APP"
 
 ARG TZ="UTC"
@@ -19,14 +18,15 @@ RUN /trunk/setups/language
 ENV TRUNK_USER=exterminate
 RUN /trunk/setups/user
 
-ARG PHP_VERSION=8.0
+ARG PHP_VERSION=8.1
 RUN /trunk/provisions/php --version "$PHP_VERSION" --dev true
 
 RUN /trunk/setups/entrypoint
 ENTRYPOINT [ "docker-entrypoint" ]
 
 RUN /trunk/setups/healthcheck
-HEALTHCHECK CMD [ "docker-healthcheck" ] --interval=1s --timeout=1s
+HEALTHCHECK --interval=1s --timeout=1s \
+  CMD [ "docker-healthcheck" ]
 
 RUN /trunk/actions/cleanup
 
@@ -52,6 +52,7 @@ RUN /trunk/provisions/github
 ENV ZSH=/usr/lib/omz
 RUN /trunk/bundles/shell
 
-HEALTHCHECK CMD [ "docker-healthcheck" ] --interval=3s --timeout=3s --start-period=10s
+HEALTHCHECK --interval=3s --timeout=3s --start-period=10s \
+  CMD [ "docker-healthcheck" ]
 
 RUN /trunk/actions/cleanup

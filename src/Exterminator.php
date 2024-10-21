@@ -13,10 +13,10 @@ use Monolog\Processor\PsrLogMessageProcessor;
 use NunoMaduro\Collision\Handler;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\ErrorHandler\ErrorRenderer\FileLinkFormatter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpKernel\DataCollector\DumpDataCollector;
-use Symfony\Component\HttpKernel\Debug\FileLinkFormatter;
 use Symfony\Component\VarDumper\Caster\ReflectionCaster;
 use Symfony\Component\VarDumper\Cloner\VarCloner;
 use Symfony\Component\VarDumper\Dumper\CliDumper;
@@ -226,7 +226,7 @@ class Exterminator
                     $linkFormat,
                     $hostOs,
                     $hostPath,
-                    $guestPath
+                    $guestPath,
                 ) {
                     $file = str_replace($guestPath, $hostPath, $file);
 
